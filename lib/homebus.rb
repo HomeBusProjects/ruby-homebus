@@ -19,9 +19,13 @@ class HomeBus
 
     res = Net::HTTP.start(uri.hostname, uri.port) do |http|
       res = http.request(req)
+
+      puts "HTTP code is #{res.code.class} #{res.code}"
       return nil unless res.code == 200
 
       answer = JSON.parse res.body, symbolize_names: true
+
+      pp answer
 
       mqtt = Hash.new
       mqtt[:host] = answer[:mqtt_hostname]
