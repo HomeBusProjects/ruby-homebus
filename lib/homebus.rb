@@ -27,7 +27,7 @@ class HomeBus
       res = http.request(req)
 
       puts "HTTP code is #{res.code.class} #{res.code}"
-      pp code
+      pp res.code
 
       return nil unless res.code == "200"
 
