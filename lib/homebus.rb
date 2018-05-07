@@ -1,3 +1,6 @@
+require 'net/http'
+require 'pp'
+
 class HomeBus
   # in order to provision, we contact
   # HomeBus.local/provision
@@ -6,6 +9,8 @@ class HomeBus
   # uuid, mqtt_hostname, mqtt_port, mqtt_username, mqtt_password
   # save this in .env.provision and return it in the mqtt parameter
   def self.provision(mac_address)
+    puts "provisioner"
+
     uri = URI('http://127.0.0.1:3000/provision')
 
     request = {
@@ -15,12 +20,15 @@ class HomeBus
     }
 
     req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
-    req.body = request.to_json
 
+    puts "about to start"
     res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+      puts "about to request"
       res = http.request(req)
 
       puts "HTTP code is #{res.code.class} #{res.code}"
+      pp code
+
       return nil unless res.code == 200
 
       answer = JSON.parse res.body, symbolize_names: true
