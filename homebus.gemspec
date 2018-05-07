@@ -3,7 +3,7 @@ Gem::Specification.new do |s|
   s.version     = '0.1.0'
   s.licenses    = ['MIT']
   s.summary     = "Ruby interface to HomeBus'
-  s.description = "Ruby interface to the HomeBus MQTT automatic provisioner'
+  s.description = 'Ruby interface to the HomeBus MQTT automatic provisioner'
   s.authors     = ["John Romkey"]
   s.email       = 'romkey+ruby@romkey.com'
   s.files       = ["lib/homebus.rb"]
