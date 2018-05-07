@@ -29,7 +29,7 @@ class HomeBus
       puts "HTTP code is #{res.code.class} #{res.code}"
       pp code
 
-      return nil unless res.code == 200
+      return nil unless res.code == "200"
 
       answer = JSON.parse res.body, symbolize_names: true
 
