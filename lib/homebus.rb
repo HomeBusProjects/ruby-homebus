@@ -1,11 +1,11 @@
-module HomeBus
+class HomeBus
   # in order to provision, we contact
   # HomeBus.local/provision
   # and POST a json payload of { provision: { mac_address: 'xx:xx:xx:xx:xx:xx' } }
   # you get back another JSON object
   # uuid, mqtt_hostname, mqtt_port, mqtt_username, mqtt_password
   # save this in .env.provision and return it in the mqtt parameter
-  def provision(mac_address)
+  def self.provision(mac_address)
     uri = URI('http://127.0.0.1:3000/provision')
 
     request = {
