@@ -20,6 +20,7 @@ class HomeBus
     }
 
     req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
+    req.body = request.to_json
 
     puts "about to start"
     res = Net::HTTP.start(uri.hostname, uri.port) do |http|
