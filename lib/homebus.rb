@@ -32,7 +32,8 @@ class HomeBus
       mqtt[:port] = answer[:mqtt_port]
       mqtt[:username] = answer[:mqtt_username]
       mqtt[:password] = answer[:mqtt_password]
-
+      mqtt[:uuid] = answer[:mqtt_uuid]
+      
       return mqtt
     end
 
