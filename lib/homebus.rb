@@ -9,7 +9,10 @@ class HomeBus
   # uuid, mqtt_hostname, mqtt_port, mqtt_username, mqtt_password
   # save this in .env.provision and return it in the mqtt parameter
   def self.provision(args)
-    uri = URI('http://127.0.0.1:3000/provision')
+    provisioner_name = args[:provisioner_name] || '127.0.0.1'
+    provisioner_port = args[:provisioner_port] || 80
+
+    uri = URI("http://#{provisioner_name}:#{provisioner_port}/provision")
 
 #    provision = {}
 #    provision.merge args
