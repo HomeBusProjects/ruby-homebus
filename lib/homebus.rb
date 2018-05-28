@@ -9,16 +9,20 @@ class HomeBus
   # uuid, mqtt_hostname, mqtt_port, mqtt_username, mqtt_password
   # save this in .env.provision and return it in the mqtt parameter
   def self.provision(args)
-    provisioner_name = args[:provisioner_name] || '127.0.0.1'
+    provisioner_name = args[:provisioner_name] || 'homebus.local'
     provisioner_port = args[:provisioner_port] || 80
 
-    uri = URI("http://#{provisioner_name}:#{provisioner_port}/provision")
+    url = "http://#{provisioner_name}:#{provisioner_port}/provision"
+    puts "HOMEBUS trying #{url}"
+
+    uri = URI(url)
 
 #    provision = {}
 #    provision.merge args
 #    provision.require([:friendly_name, :manufacturer, :model_number, :serial_number, :pin, :wo_topics, :ro_topics, :rw_topics])
 
     provision = args
+    pp args
 
     req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
     req.body = {
