@@ -1,3 +1,5 @@
+require 'homebus'
+
 require 'optparse'
 
 # based on Jake Gordon's excellent article, "Daemonizing Ruby Processes"

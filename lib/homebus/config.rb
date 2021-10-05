@@ -1,3 +1,5 @@
+require 'homebus'
+
 class Homebus::Config
   attr_accessor :login_config_filename, :local_config_filename
   attr_accessor :login_config, :local_config
