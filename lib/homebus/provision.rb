@@ -1,4 +1,4 @@
-require './lib/homebus/homebus'
+require 'homebus/homebus'
 
 class Homebus::Provision
   attr_accessor :homebus_server

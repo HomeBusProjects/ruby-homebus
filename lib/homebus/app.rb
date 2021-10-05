@@ -1,5 +1,5 @@
-require './lib/homebus/provision'
-require './lib/homebus/config'
+require 'homebus/provision'
+require 'homebus/config'
 
 require 'mqtt'
 require 'json'
