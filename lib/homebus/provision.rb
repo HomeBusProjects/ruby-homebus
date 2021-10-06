@@ -1,5 +1,7 @@
 require 'homebus/homebus'
 
+require 'cgi'
+
 class Homebus::Provision
   attr_accessor :homebus_server
   attr_accessor :id, :name, :token, :consumes, :publishes, :devices, :retry_interval
@@ -87,7 +89,7 @@ class Homebus::Provision
     @broker_username = answer[:credentials][:mqtt_username]
     @broker_password = answer[:credentials][:mqtt_password]
 
-    @broker_uri = "mqtts://#{@broker_username}:#{@broker_password}@#{@broker_hostname}:#{@broker_port}"
+    @broker_uri = "mqtts://#{CGI.escape(@broker_username)}:#{CGI.escape(@broker_password)}@#{@broker_hostname}:#{@broker_port}"
 
     @retry_interval = nil
 
