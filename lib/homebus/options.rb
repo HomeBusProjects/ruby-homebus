@@ -1,4 +1,4 @@
-require 'homebus'
+require 'homebus/homebus'
 
 require 'optparse'
 

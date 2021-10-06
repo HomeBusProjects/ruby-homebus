@@ -1,4 +1,4 @@
-require 'homebus'
+require 'homebus/homebus'
 
 class Homebus::Device
   attr_accessor :id, :name, :manufacturer, :model, :serial_number, :pin, :token

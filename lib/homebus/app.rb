@@ -1,3 +1,4 @@
+require 'homebus/homebus'
 require 'homebus/provision'
 require 'homebus/config'
 
