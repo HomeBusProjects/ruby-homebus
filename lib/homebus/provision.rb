@@ -52,7 +52,9 @@ class Homebus::Provision
     req['Content-Type'] = 'application/json'
     req['AUTHORIZATION'] = 'Bearer ' + token
 
-    Net::HTTP.start(uri.hostname, uri.port) do |http|
+    ssl = homebus_server.include?('https:')
+
+    Net::HTTP.start(uri.hostname, uri.port, use_ssl: ssl) do |http|
       res = http.request(req)
 
       return _process_response(res)
@@ -121,7 +123,9 @@ class Homebus::Provision
     req['Content-Type'] = 'application/json'
     req['AUTHORIZATION'] = 'Bearer ' + @token
 
-    Net::HTTP.start(uri.hostname, uri.port) do |http|
+    ssl = homebus_server.include?('https:')
+
+    Net::HTTP.start(uri.hostname, uri.port, use_ssl: ssl) do |http|
       res = http.request(req)
       return _process_response(res)
     end

@@ -6,6 +6,10 @@ class Homebus
   attr_accessor :homebus_server
 
   def initialize(**args)
+    unless [:homebus_server].all? { |s| args.key? s }
+      raise 'Arguments must contain :homebus_server'
+    end
+
     @homebus_server = args[:homebus_server]
   end
 
@@ -24,7 +28,9 @@ class Homebus
     req['Content-type'] = 'application/json'
     req.body = data.to_json
 
-    res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+    ssl = homebus_server.include?('https:')
+
+    res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: ssl) do |http|
       http.request(req)
     end
 
@@ -46,7 +52,9 @@ class Homebus
       req['Authorization'] = 'Bearer ' + token
     end
 
-    res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+    ssl = homebus_server.include?('https:')
+
+    res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: ssl) do |http|
       http.request(req)
     end
   end
