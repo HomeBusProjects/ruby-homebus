@@ -39,6 +39,9 @@ class Homebus
       if body['token']
         return body['token']
       end
+    else
+      puts "login failure"
+      puts res.body
     end
   end
 
@@ -57,5 +60,7 @@ class Homebus
     res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: ssl) do |http|
       http.request(req)
     end
+
+    return res.code == '200'
   end
 end
