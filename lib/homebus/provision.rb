@@ -37,7 +37,7 @@ class Homebus::Provision
 
     provision_request = {
       name: @name,
-      devices: @devices.map { |d| d.to_hash },
+      devices: devices.map { |d| d.to_hash },
       consumes: @consumes,
       publishes: @publishes
     }
@@ -104,15 +104,10 @@ class Homebus::Provision
     url = "#{@homebus_server}/api/provision_requests/#{@id}"
     uri = URI(url)
 
-    devices = []
-    @devices.each do |device|
-      devices.push device.to_hash
-    end
-
     provision_request = {
       name: @name,
       id: @id,
-      devices: @devices.map { |d| d.to_hash },
+      devices: devices.map { |d| d.to_hash },
       consumes: @consumes,
       publishes: @publishes
     }
