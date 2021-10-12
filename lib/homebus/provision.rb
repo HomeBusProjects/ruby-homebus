@@ -18,7 +18,7 @@ class Homebus::Provision
     self.consumes = args[:consumes] || []
     self.publishes = args[:publishes] || []
     self.homebus_server = args[:homebus_server]
-    self.devices = []
+    self.devices = args[:devices] || []
   end
 
   def add_device(device)
@@ -37,10 +37,13 @@ class Homebus::Provision
 
     provision_request = {
       name: @name,
-      devices: devices.map { |d| d.to_hash },
+      devices: @devices.map { |d| d.to_hash },
       consumes: @consumes,
       publishes: @publishes
     }
+
+    puts 'devices'
+    puts @devices
 
     if @id
       raise Homebus::Provision:AlreadyCreated
@@ -48,6 +51,8 @@ class Homebus::Provision
 
     req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
     req.body = provision_request.to_json
+
+    puts req.body
 
     req['Content-Type'] = 'application/json'
     req['AUTHORIZATION'] = 'Bearer ' + token
@@ -72,6 +77,9 @@ class Homebus::Provision
 
     answer = JSON.parse res.body, symbolize_names: true
 
+    puts 'answer'
+    pp answer
+
     if answer[:retry_interval]
       @id = answer[:provision_request][:id]
       @token = answer[:provision_request][:token]
@@ -95,6 +103,28 @@ class Homebus::Provision
 
     @retry_interval = nil
 
+    if answer[:devices]
+      answer[:devices].each do |d|
+        local_device = @devices.select { |ld| ld[:identity] == d[:identity] }[0]
+
+        puts 'local_device'
+        pp local_device
+
+        if local_device
+          local_device[:token] = d[:token]
+          local_device[:id] = d[:id]
+        else
+          puts 'device mismatch'
+          puts 'in app'
+          pp @devices
+          puts 'response'
+          pp answer[:devices]
+
+          raise Homebus::Provision::DeviceMismatch
+        end
+      end
+    end
+
     return true
   end
 
@@ -107,7 +137,7 @@ class Homebus::Provision
     provision_request = {
       name: @name,
       id: @id,
-      devices: devices.map { |d| d.to_hash },
+      devices: @devices.map { |d| d.to_hash },
       consumes: @consumes,
       publishes: @publishes
     }
@@ -179,5 +209,8 @@ class Homebus::Provision::InvalidResponse < Exception
 end
 
 class Homebus::Provision::AlreadyCreated < Exception
+end
+
+class Homebus::Provision::DeviceMismatch < Exception
 end
 
