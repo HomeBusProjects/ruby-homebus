@@ -8,8 +8,9 @@ require 'json'
 class Homebus::App
   attr_reader :options, :quit
   attr_reader :homebus_server, :homebus_port
-  attr_reader :broker_uri
-  
+  attr_accessor :provision_request
+  attr_accessor :device, :devices
+
   def initialize(options)
     @options = options
     @quit = false
@@ -30,6 +31,10 @@ class Homebus::App
     @homebus_token = login[:token]
   end
 
+  # define this so that apps that don't need it don't have to define it themselves
+  def setup!
+  end
+
   def run!
     check_pid
     daemonize if daemonize?
@@ -44,98 +49,114 @@ class Homebus::App
 
     setup!
 
-    while !provision!
-      sleep 30
+    begin
+      @provision_request = Homebus::Provision.from_config @config.local_config
+      update_devices(@provision_request)
+    rescue Homebus::Provision::InvalidDeserialization
+      @provision_request ||= Homebus::Provision.new(name: @name,
+                                                    homebus_server: @homebus_server,
+                                                    consumes: consumes,
+                                                    publishes: publishes,
+                                                    devices: devices
+                                                   )
+    end
+
+    unless provisioned?
+      while !provision!
+        sleep 30
+      end
     end
 
     while !quit
       begin
+        broker = @provision_request.broker
+
+        unless broker.configured? && broker.connected?
+          broker.connect!
+
+          unless broker.connected?
+            sleep(5)
+          end
+        end
+
         work!
       rescue => error
         puts "work! exception"
         pp error
+        pp @provision_request
 
-        unless @mqtt.connected?
-          connect!
-
-          unless @mqtt.connected?
-            sleep(5)
-          end
-        end
+        abort
       end
     end
   end
 
-  def connect!
-    puts @broker_uri
-    @mqtt = MQTT::Client.connect(@broker_uri)
+  def provisioned?
+    @provision_request && @provision_request.status == :provisioned
   end
 
   def provision!
-    if @broker_uri
-      connect!
+    if provisioned?
       return true
     end
 
-    provision_request = Homebus::Provision.new(name: self.name,
-                                               homebus_server: @homebus_server,
-                                               consumes: consumes,
-                                               publishes: publishes,
-                                               devices: devices
-                                              )
+    old_status = @provision_request.status
 
-    provision_request.provision!(@homebus_token)
+    @provision_request.provision(@homebus_token)
 
-    @config.local_config[:provision_request] = provision_request.to_hash
-    @config.save_local
+    if old_status != @provision_request.status
+      @config.local_config = @provision_request.to_hash
+      @config.save_local
+    end
 
-    @broker_uri = provision_request.broker_uri
+    if @provision_request.status == :provisioned
+      update_devices(@provision_request)
+      return true
+    end
 
-    connect!
-
-    true
+    return false
   end
 
-  def publish!(ddc, msg)
-    publish_to! @uuid, ddc, msg
+  def _create_provision_request
+    Homebus::Provision.from_config
   end
 
-  def publish_to!(uuid, ddc, msg)
-    homebus_msg = {
-      source: uuid,
-      timestamp: Time.now.to_i,
-      contents: {
-        ddc: ddc,
-        payload: msg
-      }
-    }
+  def update_devices(provision_request = nil)
+    @config.local_config[:provision_request][:devices].each do |device|
+      matches = devices.select do |d|
+          d.name == device[:name] &&
+          d.manufacturer == device[:identity][:manufacturer] &&
+          d.model == device[:identity][:model] &&
+          d.serial_number == device[:identity][:serial_number]
+      end
 
-    json = JSON.generate(homebus_msg)
-    if @mqtt_broker && @mqtt_port && @mqtt_username && @mqtt_password
-      @mqtt.publish "homebus/device/#{@uuid}/#{ddc}", json, true
-    else
-      
+      if matches.length > 1
+        raise Homebus::App::TooManyDevicesMatched
+      end
+
+      if matches.length == 0
+        raise Homebus::App::NoDevicesMatched
+      end
+
+      matches[0].id = device[:id]
+      matches[0].token = device[:token]
+      matches[0].provision = provision_request
     end
   end
 
   def subscribe!(*ddcs)
-    ddcs.each do |ddc| @mqtt.subscribe 'homebus/device/+/' + ddc end
+    @provision_request.broker.subscribe(ddcs)
   end
 
-  def subscribe_to_sources!(*uuids)
-    uuids.each do |uuid|
-      topic =  'homebus/device/' + uuid
-      @mqtt.subscribe topic
-    end
+  def subscribe_to_sources!(*ids)
+    @provision_request.broker.subscribe_to_sources!(ids)
   end
 
   def subscribe_to_source_ddc!(source, ddc)
-    topic =  'homebus/device/' + source + '/' + ddc
-    @mqtt.subscribe topic
+    subscribe_to_sources([source])
   end
 
   def listen!
-    @mqtt.get do |topic, msg|
+    @provision_request.broker.get do |topic, msg|
       begin
         parsed = JSON.parse msg, symbolize_names: true
       rescue
@@ -242,7 +263,29 @@ class Homebus::App
       end
     end
   end
+
+  def devices
+    if device
+      [ device ]
+    else
+      [ ]
+    end
+  end
+
+  def consumes
+    []
+  end
+
+  def publishes
+    []
+  end
 end
 
 class Homebus::App::NoDefaultLogin < Exception
+end
+
+class Homebus::App::TooManyDevicesMatched < Exception
+end
+
+class Homebus::App::NoDevicesMatched < Exception
 end

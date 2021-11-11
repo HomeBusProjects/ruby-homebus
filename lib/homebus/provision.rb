@@ -2,36 +2,125 @@ require 'homebus/homebus'
 
 require 'cgi'
 
-class Homebus::Provision
+class Homebus::Provision 
   attr_accessor :homebus_server
+  attr_accessor :status
   attr_accessor :id, :name, :token, :consumes, :publishes, :devices, :retry_interval
-  attr_accessor :broker_hostname, :broker_username, :broker_password, :broker_port, :broker_uri
-
+  attr_accessor :broker
+  
   def initialize(**args)
-    unless [:name, :consumes, :publishes, :homebus_server].all? { |s| args.key? s }
-      raise 'Arguments must contain all of :consumes, :publishes, :homebus_server'
+    unless [:name, :consumes, :publishes].all? { |s| args.key? s }
+      raise 'Arguments must contain all of :name, :consumes, :publishes'
     end
 
-    self.id = args[:id] if args[:id]
+    @id = args[:id] if args[:id]
+    @token = args[:token] if args[:token]
 
-    self.name = args[:name]
-    self.consumes = args[:consumes] || []
-    self.publishes = args[:publishes] || []
-    self.homebus_server = args[:homebus_server]
-    self.devices = args[:devices] || []
+    @name = args[:name]
+    @consumes = args[:consumes] || []
+    @publishes = args[:publishes] || []
+    @homebus_server = args[:homebus_server]
+    @status = args[:status]
+    @devices = args[:devices] || []
+
+    @status = :init
+    @broker = Homebus::Broker.new
   end
 
   def add_device(device)
     @devices.push device
   end
 
-  # in order to provision, we contact
-  # HomeBus.local/provision
-  # and POST a json payload of { provision: { mac_address: 'xx:xx:xx:xx:xx:xx' } }
-  # you get back another JSON object
-  # uuid, mqtt_hostname, mqtt_port, mqtt_username, mqtt_password
-  # save this in .env.provision and return it in the mqtt parameter
   def provision(token)
+    case status
+    when :init
+      return _provision(token)
+    when :wait
+      return _get
+    when :provisioned
+      return true
+    else
+      return false
+    end
+  end
+
+  def provision!(token)
+    return true if status == :provisioned
+
+    if status == :wait
+      results = get
+    else
+      results = provision(token)
+    end
+
+    loop do
+      if status == :provisioned
+        return true
+      end
+
+      sleep(15)
+
+      results = get
+    end
+  end
+
+  def to_hash
+    value = {
+      homebus_server: @homebus_server,
+      status: @status,
+      provision_request: {
+        name: @name,
+        consumes: @consumes,
+        publishes: @publishes,
+        devices: @devices.map { |d| d.to_hash }
+      }
+    }
+
+    if @id
+      value[:provision_request][:id] = @id
+      value[:provision_request][:token] = @token
+    end
+
+    if @status == :provisioned
+      broker_hash = @broker.to_config
+
+      if broker_hash
+        value.merge! broker_hash
+      end
+    end
+
+    value
+  end
+
+  def self.from_config(obj)
+    return nil unless obj
+
+    unless obj[:provision_request]
+      raise Homebus::Provision::InvalidDeserialization
+    end
+
+    pr = Homebus::Provision.new obj[:provision_request]
+
+    pr.homebus_server = obj[:homebus_server]
+    pr.status = obj[:status].to_sym
+
+    pr.devices = []
+
+    obj[:provision_request][:devices].each do |d|
+      device = Homebus::Device.from_config(d)
+      device.provision = pr
+
+      pr.devices.push device
+    end
+
+    pr.broker = Homebus::Broker.from_config(obj)
+
+    return pr
+  end
+
+  private
+
+  def _provision(token)
     url = "#{@homebus_server}/api/provision_requests"
     uri = URI(url)
 
@@ -46,7 +135,7 @@ class Homebus::Provision
     puts @devices
 
     if @id
-      raise Homebus::Provision:AlreadyCreated
+      raise Homebus::Provision::AlreadyCreated
     end
 
     req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
@@ -66,70 +155,9 @@ class Homebus::Provision
     end
   end
 
-  def _process_response(res)
-    if res.code == '401'
-      raise Homebus::Provision::InvalidToken
-    end
 
-    if res.code != '200' && res.code != '202'
-      return false
-    end
-
-    answer = JSON.parse res.body, symbolize_names: true
-
-    puts 'answer'
-    pp answer
-
-    if answer[:retry_interval]
-      @id = answer[:provision_request][:id]
-      @token = answer[:provision_request][:token]
-      @retry_interval = answer[:retry_interval]
-
-      return false
-    end
-
-    unless answer[:broker] && answer[:credentials]
-      raise Homebus::Provision::InvalidResponse
-    end
-
-    pp answer[:broker]
-
-    @broker_hostname = answer[:broker][:mqtt_hostname]
-    @broker_port = answer[:broker][:secure_mqtt_port]
-    @broker_username = answer[:credentials][:mqtt_username]
-    @broker_password = answer[:credentials][:mqtt_password]
-
-    @broker_uri = "mqtts://#{CGI.escape(@broker_username)}:#{CGI.escape(@broker_password)}@#{@broker_hostname}:#{@broker_port}"
-
-    @retry_interval = nil
-
-    if answer[:devices]
-      answer[:devices].each do |d|
-        local_device = @devices.select { |ld| ld[:identity] == d[:identity] }[0]
-
-        puts 'local_device'
-        pp local_device
-
-        if local_device
-          local_device[:token] = d[:token]
-          local_device[:id] = d[:id]
-        else
-          puts 'device mismatch'
-          puts 'in app'
-          pp @devices
-          puts 'response'
-          pp answer[:devices]
-
-          raise Homebus::Provision::DeviceMismatch
-        end
-      end
-    end
-
-    return true
-  end
-
-  def get
-    raise 'Not yet provisioned' unless @id
+  def _get
+    raise 'Not yet provisioned' unless status == :wait || status == :provisioned
 
     url = "#{@homebus_server}/api/provision_requests/#{@id}"
     uri = URI(url)
@@ -156,47 +184,69 @@ class Homebus::Provision
     end
   end
 
-  def provision!(token)
-    results = provision(token)
+  def _process_response(res)
+    if res.code == '401'
+      @status = :invalid_token
+      raise Homebus::Provision::InvalidToken
+    end
 
-    loop do
-      if results
-        return true
+    if res.code != '200' && res.code != '201' && res.code != '202' 
+      puts "response code #{res.code}"
+      @status = :invalid_response
+      raise Homebus::Provision::InvalidResponse
+    end
+
+    answer = JSON.parse res.body, symbolize_names: true
+
+    if answer[:retry_interval]
+      @status = :wait
+
+      @id = answer[:provision_request][:id] if answer[:provision_request][:id]
+      @token = answer[:provision_request][:token] if answer[:provision_request][:token]
+      @retry_interval = answer[:retry_interval]
+
+      return false
+    end
+
+    unless answer[:broker] && answer[:credentials]
+      @status = :invalid_response
+
+      raise Homebus::Provision::InvalidResponse
+    end
+
+    @status = :provisioned
+
+    @broker.host = answer[:broker][:mqtt_hostname]
+    @broker.port = answer[:broker][:secure_mqtt_port]
+    @broker.username = answer[:credentials][:mqtt_username]
+    @broker.password = answer[:credentials][:mqtt_password]
+
+    @retry_interval = nil
+
+    if answer[:devices]
+      answer[:devices].each do |d|
+        local_device = @devices.select { |ld|
+          i = d[:identity]
+          ld.manufacturer == i[:manufacturer] &&
+          ld.model == i[:model] &&
+          ld.serial_number == i[:serial_number]
+        }[0]
+
+        if local_device
+          local_device.token = d[:token]
+          local_device.id = d[:id]
+        else
+          raise Homebus::Provision::DeviceMismatch
+        end
       end
-
-      sleep(15)
-
-      results = get
     end
+
+    return true
   end
 
+end
 
-  def to_hash
-    value = {
-      name: name,
-      consumes: consumes,
-      publishes: publishes,
-      devices: devices.map do |d| { name: d[:name], identity: d[:identity], id: d[:id], token: d[:token] } end,
-    }
-
-    if id
-      value[:id] = id
-    end
-
-    if token
-      value[:token] = token
-    end
-
-    if self.broker_hostname
-      value[:broker_hostname] = broker_hostname
-      value[:broker_port] = broker_port
-      value[:broker_uri] = broker_uri
-      value[:broker_username] = broker_username
-      value[:broker_password] = broker_password
-    end
-
-    value
-  end
+class Homebus::Provision::InvalidDeserialization < Exception
 end
 
 class Homebus::Provision::InvalidToken < Exception

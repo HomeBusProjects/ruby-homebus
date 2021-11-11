@@ -52,3 +52,37 @@ configuration.
 ```
 provision_request = Homebus::Provision.new(name: "pr name",
                                                  
+
+## Homebus::App Lifecycle
+
+```
+app = Homebus.App.new
+```
+
+Loads account-wide, Homebus state, app state and app configuration.
+
+``` 
+app.setup!
+```
+
+The application's configuration and state are available to it.
+
+The application should perform any housekeeping tasks and further
+initialization. It should set up the `devices` array. For instance, if
+interfacing to a cloud based service, this would be the time to read
+the list of devices in the cloud service and set up the array.
+
+
+```
+app.work!
+```
+
+`Homebus::App` creates the Homebus::Provision object before calling the
+`work!` method. If the app is already provisioned, `work!` will be
+called directly, otherwise provisioning will be requested and `work!`
+will not be called until provisioning is accepted.
+
+`work!` should return the number of seconds to wait before calling it
+again.
+
+

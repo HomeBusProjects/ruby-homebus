@@ -1,21 +1,21 @@
 require 'homebus/homebus'
 
 class Homebus::Device
-  attr_accessor :id, :name, :manufacturer, :model, :serial_number, :pin, :token
+  attr_accessor :id, :name, :manufacturer, :model, :serial_number, :pin, :token, :provision
 
   def initialize(**args)
-    unless [:name, :manufacturer, :model, :serial_number, :provision].all? { |s| args.key? s }
-      raise 'Arguments must contain all of :name, :manufacturer, :model, :serial_number, :provision'
+    unless [:name, :manufacturer, :model, :serial_number].all? { |s| args.key? s }
+      raise 'Arguments must contain all of :name, :manufacturer, :model, :serial_number'
     end
 
-    self.name = args[:name]
-    self.id = args[:id] if args[:id]
-    self.token = args[:token] if args[:token]
+    @name = args[:name]
+    @id = args[:id] if args[:id]
+    @token = args[:token] if args[:token]
 
-    self.manufacturer = args[:manufacturer] || ''
-    self.model = args[:model] || ''
-    self.serial_number = args[:serial_number] || ''
-    self.pin = args[:pin] || ''
+    @manufacturer = args[:manufacturer] || ''
+    @model = args[:model] || ''
+    @serial_number = args[:serial_number] || ''
+    @pin = args[:pin] || ''
   end
 
   def create
@@ -37,10 +37,6 @@ class Homebus::Device
       provision_request_id: @provision_request.id
     }
 
-    if @id
-      provision_request[:id] = @id
-    end
-
     req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
     req.body = device_post.to_json
 
@@ -59,32 +55,49 @@ class Homebus::Device
       return answer if(answer[:status] == 'waiting')
     end
 
-    self.id = answer[:id]
-    self.token = answer[:token]
+    @id = answer[:id]
+    @token = answer[:token]
 
     return answer
   end
 
+  def publish!(ddc, msg)
+    @provision.broker.publish!(@id, ddc, msg)
+  end
+
   def to_hash
     value = {
-      name: self.name,
+      name: @name,
       identity: {
-        manufacturer: self.manufacturer,
-        model: self.model,
-        serial_number: self.serial_number,
-        pin: self.pin
+        manufacturer: @manufacturer,
+        model: @model,
+        serial_number: @serial_number,
+        pin: @pin
       }
     }
 
-    if self.id
-      value[:id] = self.id
+    if @id
+      value[:id] = @id
     end
 
-    if self.token
-      value[:token] = self.token
+    if @token
+      value[:token] = @token
     end
 
-    value
+    return value
+  end
+
+  def self.from_config(obj)
+    device = Homebus::Device.new(name: obj[:name],
+                                 manufacturer: obj[:identity][:manufacturer],
+                                 model: obj[:identity][:model],
+                                 serial_number: obj[:identity][:serial_number]
+                                )
+
+    device.id = obj[:id] if obj[:id]
+    device.token = obj[:token] if obj[:token]
+
+    return device
   end
 end
 
