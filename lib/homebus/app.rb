@@ -53,7 +53,7 @@ class Homebus::App
       @provision_request = Homebus::Provision.from_config @config.local_config
       update_devices(@provision_request)
     rescue Homebus::Provision::InvalidDeserialization
-      @provision_request ||= Homebus::Provision.new(name: @name,
+      @provision_request ||= Homebus::Provision.new(name: name,
                                                     homebus_server: @homebus_server,
                                                     consumes: consumes,
                                                     publishes: publishes,
