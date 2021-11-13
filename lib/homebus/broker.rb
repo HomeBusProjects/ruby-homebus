@@ -1,3 +1,5 @@
+require 'homebus/broker'
+
 class Homebus::Broker
   attr_accessor :uri, :host, :port, :username, :password
 
@@ -39,9 +41,6 @@ class Homebus::Broker
         payload: msg
       }
     }
-
-    puts 'broker publish!'
-    pp id, ddc, msg
 
     json = JSON.generate(homebus_msg)
     @mqtt.publish "homebus/device/#{id}/#{ddc}", json, true
