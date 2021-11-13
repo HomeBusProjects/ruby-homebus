@@ -20,7 +20,6 @@ class Homebus::Broker
       abort 'no broker'
     end
 
-    puts @uri
     @mqtt = MQTT::Client.connect(@uri)
   end
 
