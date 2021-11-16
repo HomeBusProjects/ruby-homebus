@@ -13,7 +13,7 @@ class Homebus::Config
     @login_config_filename = File.join(ENV['HOME'], DEFAULT_LOGIN_CONFIG_FILENAME)
     @local_config_filename = DEFAULT_LOCAL_CONFIG_FILENAME
 
-    @login_config = { default: nil, next_index: 0, homebus_instances: [] }
+    @login_config = { default_login: nil, next_index: 0, homebus_instances: [] }
     @local_config = {}
   end
 
@@ -58,6 +58,10 @@ class Homebus::Config
   end
 
   def save_login
+    if !@login_config[:default_login] && @login_config[:homebus_instances].length > 0
+      @login_config[:default_login] = 0
+    end
+
     File.open(@login_config_filename, 'w') do |f|
       f.puts JSON.pretty_generate(@login_config)
     end
