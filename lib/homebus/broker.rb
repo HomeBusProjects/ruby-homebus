@@ -48,10 +48,10 @@ class Homebus::Broker
   def listen!(callback)
     @mqtt.get do |topic, message|
       pp 'mqtt.get'
-      pp topic, msg
+      pp topic, message
 
       begin
-        parsed = JSON.parse msg, symbolize_names: true
+        parsed = JSON.parse message, symbolize_names: true
       rescue
         raise Homebus::Broker::ReceiveBadJSON
       end
