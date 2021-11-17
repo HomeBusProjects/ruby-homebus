@@ -60,12 +60,12 @@ class Homebus::Broker
         raise Homebus::Broker::ReceiveBadEncapsulation
       end
 
-      receive!({
-               source: parsed[:source],
-               timestamp: parsed[:timestamp],
-               sequence: parsed[:sequence],
-               ddc: parsed[:contents][:ddc],
-               payload: parsed[:contents][:payload]
+      callback({
+                 source: parsed[:source],
+                 timestamp: parsed[:timestamp],
+                 sequence: parsed[:sequence],
+                 ddc: parsed[:contents][:ddc],
+                 payload: parsed[:contents][:payload]
              })
     end
   end
