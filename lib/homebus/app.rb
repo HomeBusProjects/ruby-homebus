@@ -156,27 +156,7 @@ class Homebus::App
   end
 
   def listen!
-    @provision_request.broker.listen!(-> (topic, msg) { self.receive_callback(topic, msg) })
-  end
-
-  def receive_callback(topic, msg)
-    begin
-      parsed = JSON.parse msg, symbolize_names: true
-    rescue
-      next
-    end
-
-    if parsed[:source].nil? || parsed[:contents].nil?
-      next
-    end
-
-    receive!({
-               source: parsed[:source],
-               timestamp: parsed[:timestamp],
-               sequence: parsed[:sequence],
-               ddc: parsed[:contents][:ddc],
-               payload: parsed[:contents][:payload]
-             })
+    @provision_request.broker.listen!(-> (topic, msg) { self.receive!(**args) })
   end
 
   def daemonize?

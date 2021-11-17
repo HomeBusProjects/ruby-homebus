@@ -47,7 +47,26 @@ class Homebus::Broker
 
   def listen!(callback)
     @mqtt.get do |topic, message|
-      callback(topic, message)
+      pp 'mqtt.get'
+      pp topic, msg
+
+      begin
+        parsed = JSON.parse msg, symbolize_names: true
+      rescue
+        raise Homebus::Broker::ReceiveBadJSON
+      end
+
+      if parsed[:source].nil? || parsed[:contents].nil?
+        raise Homebus::Broker::ReceiveBadEncapsulation
+      end
+
+      receive!({
+               source: parsed[:source],
+               timestamp: parsed[:timestamp],
+               sequence: parsed[:sequence],
+               ddc: parsed[:contents][:ddc],
+               payload: parsed[:contents][:payload]
+             })
     end
   end
 
@@ -107,3 +126,8 @@ class Homebus::Broker
   end
 end
 
+class Homebus::Broker::ReceiveBadJSON < Exception
+end
+
+class Homebus::Broker::ReceiveBadEncapsulation < Exception
+end
