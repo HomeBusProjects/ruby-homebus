@@ -45,6 +45,12 @@ class Homebus::Broker
     @mqtt.publish "homebus/device/#{id}/#{ddc}", json, true
   end
 
+  def listen!(callback)
+    @mqtt.get do |topic, message|
+      callback(topic, message)
+    end
+  end
+
   def subscribe!(*ddcs)
     ddcs.each do |ddc| @mqtt.subscribe 'homebus/device/+/' + ddc end
   end
