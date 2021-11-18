@@ -60,7 +60,7 @@ class Homebus::Broker
         raise Homebus::Broker::ReceiveBadEncapsulation
       end
 
-      callback({
+      callback.call({
                  source: parsed[:source],
                  timestamp: parsed[:timestamp],
                  sequence: parsed[:sequence],
