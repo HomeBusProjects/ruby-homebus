@@ -45,6 +45,30 @@ class Homebus::Broker
     @mqtt.publish "homebus/device/#{id}/#{ddc}", json, true
   end
 
+  def listen!(callback)
+    @mqtt.get do |topic, message|
+      begin
+        parsed = JSON.parse message, symbolize_names: true
+      rescue
+        raise Homebus::Broker::ReceiveBadJSON
+      end
+
+      if parsed[:source].nil? || parsed[:contents].nil?
+        raise Homebus::Broker::ReceiveBadEncapsulation
+      end
+
+      received_msg = {
+        source: parsed[:source],
+        timestamp: parsed[:timestamp],
+        sequence: parsed[:sequence],
+        ddc: parsed[:contents][:ddc],
+        payload: parsed[:contents][:payload]
+      }
+
+      callback.call(received_msg)
+    end
+  end
+
   def subscribe!(*ddcs)
     ddcs.each do |ddc| @mqtt.subscribe 'homebus/device/+/' + ddc end
   end
@@ -101,3 +125,8 @@ class Homebus::Broker
   end
 end
 
+class Homebus::Broker::ReceiveBadJSON < Exception
+end
+
+class Homebus::Broker::ReceiveBadEncapsulation < Exception
+end
