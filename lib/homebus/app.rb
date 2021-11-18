@@ -156,7 +156,7 @@ class Homebus::App
   end
 
   def listen!
-    @provision_request.broker.listen!(-> (topic, msg) { self.receive!(**args) })
+    @provision_request.broker.listen!(-> (msg) { self.receive!(msg) })
   end
 
   def daemonize?
