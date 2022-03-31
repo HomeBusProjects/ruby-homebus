@@ -31,10 +31,10 @@ class Homebus::Broker
     @mqtt && @mqtt.connected?
   end
 
-  def publish!(id, ddc, msg)
+  def publish!(id, ddc, msg, timestamp = Time.now.to_i)
     homebus_msg = {
       source: id,
-      timestamp: Time.now.to_i,
+      timestamp: timestamp,
       contents: {
         ddc: ddc,
         payload: msg

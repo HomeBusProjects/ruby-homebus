@@ -61,8 +61,8 @@ class Homebus::Device
     return answer
   end
 
-  def publish!(ddc, msg)
-    @provision.broker.publish!(@id, ddc, msg)
+  def publish!(ddc, msg, timestamp = Time.now.to_i)
+    @provision.broker.publish!(@id, ddc, msg, timestamp)
   end
 
   def to_hash
