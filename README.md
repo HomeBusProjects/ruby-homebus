@@ -50,7 +50,14 @@ configuration.
 ### Homebus::Provision.new
 
 ```
-provision_request = Homebus::Provision.new(name: "pr name",
+	provision_request = Homebus::Provision.new(name: 'pr name',
+	                                           consumes: [ DDCS], 
+	                                           publishes: [ DDCS], 
+	                                           devices: [ Homebus::Device ],
+	                                           publishes: [ DDCS], 
+										       server: 'https://homebus.io',
+											   token: API_TOKEN)
+```
                                                  
 
 ## Homebus::App Lifecycle

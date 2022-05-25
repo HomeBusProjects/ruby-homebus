@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'homebus'
-  s.version     = '0.22.0'
+  s.version     = '0.22.1'
   s.licenses    = ['MIT']
   s.summary     = 'Ruby interface to Homebus'
   s.description = 'Ruby interface to the Homebus MQTT automatic provisioner'
