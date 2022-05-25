@@ -55,8 +55,8 @@ configuration.
 	                                           publishes: [ DDCS], 
 	                                           devices: [ Homebus::Device ],
 	                                           publishes: [ DDCS], 
-										       server: 'https://homebus.io',
-											   token: API_TOKEN)
+	                                           server: 'https://homebus.io',
+	                                           token: API_TOKEN)
 ```
                                                  
 
