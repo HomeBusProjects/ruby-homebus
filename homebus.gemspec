@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby -rubygems
-# -*- encoding: utf-8 -*-
-$:.push File.expand_path("../lib", __FILE__)
-require "homebus/version"
+
+require_relative "lib/homebus/version"
 
 Gem::Specification.new do |s|
   s.name        = 'homebus'
