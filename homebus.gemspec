@@ -1,6 +1,11 @@
+#!/usr/bin/env ruby -rubygems
+# -*- encoding: utf-8 -*-
+$:.push File.expand_path("../lib", __FILE__)
+require "homebus/version"
+
 Gem::Specification.new do |s|
   s.name        = 'homebus'
-  s.version     = '0.22.1'
+  s.version     = Homebus::VERSION
   s.licenses    = ['MIT']
   s.summary     = 'Ruby interface to Homebus'
   s.description = 'Ruby interface to the Homebus MQTT automatic provisioner'
