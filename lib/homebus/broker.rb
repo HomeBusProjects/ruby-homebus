@@ -20,7 +20,7 @@ class Homebus::Broker
       abort 'no broker'
     end
 
-    @mqtt = MQTT::Client.connect(@uri)
+    @mqtt = MQTT::Client.connect(host: @host, port: @port, username: @username, password: @password)
   end
 
   def configured?
