@@ -2,15 +2,19 @@ require 'fileutils'
 require 'json'
 
 class Homebus::State
-  attr_accessor :store, :filename
+  attr_accessor :state, :filename
 
   DEFAULT_STATE_FILENAME = '.homebus-state.json'
 
   def initialize
-    @store = {}
+    @state = {}
     @filename = DEFAULT_STATE_FILENAME
 
-    load!
+    if File.exist? @filename
+      load!
+    else
+      commit!
+    end
   end
 
   def clear!
@@ -18,7 +22,9 @@ class Homebus::State
   end
 
   def load!
-      @store = JSON.parse(File.read(@filename), symbolize_names: true)
+    if File.exists? @filename
+      @state = JSON.parse(File.read(@filename), symbolize_names: true)
+    end
   end
 
   def load
@@ -31,8 +37,8 @@ class Homebus::State
   end
 
   def commit!
-      File.write(@filename, JSON.pretty_generate(@store))
-      FileUtils.chmod(0600, @login_config_filename)
+      File.write(@filename, JSON.pretty_generate(@state))
+      FileUtils.chmod(0600, @filename)
   end
 
   def commit
