@@ -1,6 +1,7 @@
 require 'homebus/homebus'
 require 'homebus/provision'
 require 'homebus/config'
+require 'homebus/state'
 
 require 'mqtt'
 require 'json'
