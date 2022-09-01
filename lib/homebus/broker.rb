@@ -18,6 +18,8 @@ class Homebus::Broker
     end
 
     @mqtt = PahoMqtt::Client.new(username: @username, password: @password, client_id: "homebus_#{rand(1..1_000_000)}", host: @host, port: @port, ssl: true)
+    @mqtt.persistent = true
+    @mqtt.reconnect_limit = -1
     @mqtt.connect
   end
 
