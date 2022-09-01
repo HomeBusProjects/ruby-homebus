@@ -1,5 +1,7 @@
 require 'homebus/broker'
 
+require 'paho-mqtt'
+
 class Homebus::Broker
   attr_accessor :host, :port, :username, :password
 
@@ -15,7 +17,8 @@ class Homebus::Broker
       abort 'no broker'
     end
 
-    @mqtt = MQTT::Client.connect(host: @host, port: @port, username: @username, password: @password, ssl: :TLSv1_2)
+    @mqtt = PahoMqtt::Client.new(username: @username, password: @password, client_id: "homebus_#{rand(1..1_000_000)}", host: @host, port: @port, ssl: true)
+    @mqtt.connect
   end
 
   def configured?
@@ -41,9 +44,9 @@ class Homebus::Broker
   end
 
   def listen!(callback)
-    @mqtt.get do |topic, message|
+    @mqtt.on_message do |packet|
       begin
-        parsed = JSON.parse message, symbolize_names: true
+        parsed = JSON.parse packet.payload, symbolize_names: true
       rescue
         raise Homebus::Broker::ReceiveBadJSON
       end
@@ -65,13 +68,13 @@ class Homebus::Broker
   end
 
   def subscribe!(*ddcs)
-    ddcs.each do |ddc| @mqtt.subscribe 'homebus/device/+/' + ddc end
+    ddcs.each do |ddc| @mqtt.subscribe(['homebus/device/+/' + ddc, 0]) end
   end
 
   def subscribe_to_sources!(*ids)
     ids.each do |id|
       topic =  'homebus/device/' + id
-      @mqtt.subscribe topic
+      @mqtt.subscribe([topic, 0])
     end
   end
 

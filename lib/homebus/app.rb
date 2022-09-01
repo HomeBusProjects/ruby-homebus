@@ -3,7 +3,6 @@ require 'homebus/provision'
 require 'homebus/config'
 require 'homebus/state'
 
-require 'mqtt'
 require 'json'
 
 class Homebus::App

@@ -1,3 +1,3 @@
 class Homebus
-  VERSION='0.30.2'
+  VERSION='0.40.0'
 end
