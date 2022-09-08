@@ -14,12 +14,16 @@ class Homebus::App
   def initialize(options)
     @options = options
     @quit = false
-    
-    @config = Homebus::Config.new
-    @config.load
 
-    @state = Homebus::State.new
-    @state.load!
+    unless @config
+      @config = Homebus::Config.new
+      @config.load
+    end
+
+    unless @state
+      @state = Homebus::State.new
+      @state.load!
+    end
 
     login = @config.default_login
     unless login
