@@ -28,6 +28,9 @@ class Homebus::Broker
     @mqtt.reconnect_limit = -1
 
     @mqtt.on_puback do
+      puts 'puback'
+      puts @oustanding_publishes
+
       @semaphore.synchronize do
         @outstanding_publishes -= 1
       end
@@ -99,6 +102,9 @@ class Homebus::Broker
   end
 
   def outstanding_publishes?
+    puts 'outstanding_publishes?'
+    puts @outstanding_publishes
+
     @semaphore.synchronize do
       return @outstanding_publishes != 0
     end
