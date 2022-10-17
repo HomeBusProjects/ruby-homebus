@@ -57,7 +57,7 @@ class Homebus::Broker
     json = JSON.generate(homebus_msg)
 
     @semaphore.synchronize do
-      outstanding_publishes += 1
+      @outstanding_publishes += 1
     end
 
     @mqtt.publish "homebus/device/#{id}/#{ddc}", json, true
