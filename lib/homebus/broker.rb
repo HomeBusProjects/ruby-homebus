@@ -1,5 +1,3 @@
-require 'thread'
-
 require 'paho-mqtt'
 
 require 'homebus/broker'
@@ -13,7 +11,7 @@ class Homebus::Broker
     @username = args[:username] if args[:username]
     @password = args[:password] if args[:password]
 
-    @semaphore = Mutex.new
+#    @semaphore = Mutex.new
 
     @outstanding_publishes = 0
   end
@@ -32,9 +30,9 @@ class Homebus::Broker
       puts 'puback'
       puts @oustanding_publishes
 
-      @semaphore.synchronize do
+#      @semaphore.synchronize do
         @outstanding_publishes -= 1
-      end
+#      end
     end
 
     # run in threaded mode
@@ -61,11 +59,22 @@ class Homebus::Broker
 
     json = JSON.generate(homebus_msg)
 
-    @semaphore.synchronize do
+#    @semaphore.synchronize do
       @outstanding_publishes += 1
-    end
+#    end
 
     @mqtt.publish "homebus/device/#{id}/#{ddc}", json, true
+
+    puts 'publish start'
+
+    while @outstanding_publishes > 0
+      @client.loop_write
+      @client.loop_read
+      @client.loop_misc
+      sleep 0.1
+    end
+
+    puts 'publish complete'
   end
 
   def listen!(callback)
