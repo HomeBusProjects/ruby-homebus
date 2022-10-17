@@ -64,6 +64,12 @@ class Homebus::Provision
     end
   end
 
+  def exit_when_safe!
+    while @broker.outstanding_publishes?
+      sleep 0.1
+    end
+  end
+
   def to_hash
     value = {
       homebus_server: @homebus_server,

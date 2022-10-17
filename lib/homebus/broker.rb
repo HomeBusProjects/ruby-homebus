@@ -1,6 +1,8 @@
-require 'homebus/broker'
+require 'thread'
 
 require 'paho-mqtt'
+
+require 'homebus/broker'
 
 class Homebus::Broker
   attr_accessor :host, :port, :username, :password
@@ -10,6 +12,10 @@ class Homebus::Broker
     @port = args[:port] if args[:port]
     @username = args[:username] if args[:username]
     @password = args[:password] if args[:password]
+
+    @semaphore = Mutex.new
+
+    @outstanding_publishes = 0
   end
 
   def connect!
@@ -20,6 +26,13 @@ class Homebus::Broker
     @mqtt = PahoMqtt::Client.new(username: @username, password: @password, client_id: "homebus_#{rand(1..1_000_000)}", host: @host, port: @port, ssl: true)
     @mqtt.persistent = true
     @mqtt.reconnect_limit = -1
+
+    @mqtt.on_puback do
+      @semaphore.synchronize do
+        @outstanding_publishes -= 1
+      end
+    end
+
     @mqtt.connect
   end
 
@@ -42,6 +55,11 @@ class Homebus::Broker
     }
 
     json = JSON.generate(homebus_msg)
+
+    @semaphore.synchronize do
+      outstanding_publishes += 1
+    end
+
     @mqtt.publish "homebus/device/#{id}/#{ddc}", json, true
   end
 
@@ -77,6 +95,12 @@ class Homebus::Broker
     ids.each do |id|
       topic =  'homebus/device/' + id
       @mqtt.subscribe([topic, 0])
+    end
+  end
+
+  def outstanding_publishes?
+    @semaphore.synchronize do
+      return @outstanding_publishes != 0
     end
   end
 
