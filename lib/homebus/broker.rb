@@ -68,9 +68,9 @@ class Homebus::Broker
     puts 'publish start'
 
     while @outstanding_publishes > 0
-      @client.loop_write
-      @client.loop_read
-      @client.loop_misc
+      @mqtt.loop_write
+      @mqtt.loop_read
+      @mqtt.loop_misc
       sleep 0.1
     end
 
