@@ -108,6 +108,10 @@ class Homebus::App
     return false
   end
 
+  def exit_when_safe!
+    @provision_rquest.exit_when_safe!
+  end
+
   def _create_provision_request
     Homebus::Provision.from_config
   end
