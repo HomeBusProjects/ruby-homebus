@@ -23,7 +23,8 @@ class Homebus::Broker
       abort 'no broker'
     end
 
-    @mqtt = PahoMqtt::Client.new(username: @username, password: @password, client_id: "homebus_#{rand(1..1_000_000)}", host: @host, port: @port, ssl: true)
+#    @mqtt = PahoMqtt::Client.new(username: @username, password: @password, client_id: "homebus_#{rand(1..1_000_000)}", host: @host, port: @port, ssl: true)
+    @mqtt = PahoMqtt::Client.new(username: @username, password: @password, client_id: "homebus_#{rand(1..1_000_000)}", ssl: true)
     @mqtt.persistent = true
     @mqtt.reconnect_limit = -1
 
@@ -36,7 +37,8 @@ class Homebus::Broker
       end
     end
 
-    @mqtt.connect
+    # run in threaded mode
+    @mqtt.connect(@host, @port, 10, false, true)
   end
 
   def configured?
